@@ -7,7 +7,7 @@ if [ -f backend.tf ]; then
 fi
 
 echo "🛠️ Step 2: Initializing Terraform..."
-terraform init
+terraform init -reconfigure
 
 echo "📝 Formatting Terraform files..."
 terraform fmt -recursive
