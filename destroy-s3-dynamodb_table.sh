@@ -1,13 +1,7 @@
 #!/bin/bash
 
-echo "📁 Step 1: Disabling backend.tf (if exists) to use local backend..."
-if [ -f backend.tf ]; then
-  mv backend.tf backend.tf.disabled
-  echo "🔒 backend.tf disabled."
-fi
-
 echo "🔧 Step 2: Initializing Terraform locally..."
-terraform init
+terraform init -reconfigure
 
 echo "✅ Step 3: Validating Terraform configuration..."
 terraform validate
