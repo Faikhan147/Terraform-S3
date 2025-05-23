@@ -1,10 +1,11 @@
 #!/bin/bash
 
+echo "✅ Validating configuration..."
+terraform validate
 
 echo "📝 Formatting Terraform files..."
 terraform fmt -recursive
 
-#!/bin/bash
 
 echo "🛑 WARNING: This will permanently destroy the S3 bucket and DynamoDB table!"
 read -p "Type 'destroy' to continue: " confirm
