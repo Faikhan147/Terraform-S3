@@ -1,25 +1,19 @@
 #!/bin/bash
 
-echo "🔒 Step 1: Disabling backend.tf to use local backend..."
-if [ -f backend.tf ]; then
-  mv backend.tf backend.tf.disabled
-  echo "🛠️ backend.tf disabled for local destroy."
-fi
-
-echo "🛠️ Step 2: Initializing Terraform..."
-terraform init -reconfigure
 
 echo "📝 Formatting Terraform files..."
 terraform fmt -recursive
 
-echo "🛑 WARNING: This will destroy the S3 bucket and DynamoDB table!"
-read -p "Are you absolutely sure? Type 'destroy' to continue: " confirm
+#!/bin/bash
+
+echo "🛑 WARNING: This will permanently destroy the S3 bucket and DynamoDB table!"
+read -p "Type 'destroy' to continue: " confirm
 
 if [ "$confirm" == "destroy" ]; then
     echo "🔥 Destroying S3 and DynamoDB infrastructure..."
     terraform destroy -var-file="terraform.tfvars"
 
-    echo "📊 Showing the state after destruction..."
+    echo "📊 Showing final state..."
     terraform show
 else
     echo "❌ Destroy aborted by user."
