@@ -1,4 +1,4 @@
 region              = "ap-south-1"
 bucket_name         = "terraform-backend-faisal-khan"
 dynamodb_table_name = "terraform-locks"
-kms_key_arn         = "arn:aws:kms:ap-south-1:195275659054:key/cf1e36fb-e5c5-4d3d-bfd9-4eda4041cb55"
+kms_key_arn         = "arn:aws:kms:ap-south-1:923884399206:key/4e8228fa-b9b2-472a-8333-bdf6dec516c1"
