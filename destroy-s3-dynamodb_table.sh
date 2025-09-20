@@ -2,48 +2,45 @@
 
 set -e
 
-echo "📂 Step 0: Select environment to destroy (prod/staging/qa):"
-read env
+ENVS=("prod" "staging" "qa")
 
-# Validate input
-if [[ "$env" != "prod" && "$env" != "staging" && "$env" != "qa" ]]; then
-    echo "❌ Invalid environment. Exiting."
-    exit 1
-fi
+for env in "${ENVS[@]}"; do
+    VAR_FILE="terraform.tfvars.$env"
+    BACKEND_FILE="backend-$env.hcl"
 
-VAR_FILE="terraform.tfvars.$env"
-echo "🔹 Using variables file: $VAR_FILE"
+    echo "=============================="
+    echo "⚠️ Destroying environment: $env"
+    echo "Using variables file: $VAR_FILE"
+    echo "Using backend file: $BACKEND_FILE"
+    echo "=============================="
 
-echo "🔧 Step 1: Downloading terraform.tfstate from S3 (optional)..."
-aws s3 cp s3://$(grep bucket $VAR_FILE | awk -F'=' '{print $2}' | tr -d ' "')/s3/terraform.tfstate ./terraform.tfstate || echo "ℹ️ No existing state file found locally, continuing..."
+    # Step 1: Disable backend.tf temporarily
+    if [ -f backend.tf ]; then
+        mv backend.tf backend.tf.disabled
+    fi
 
-echo "🔧 Step 2: Initializing Terraform locally..."
-terraform init -reconfigure -var-file="$VAR_FILE"
+    # Step 2: Initialize Terraform
+    terraform init -reconfigure -backend-config="$BACKEND_FILE"
 
-echo "✅ Step 3: Validating Terraform configuration..."
-terraform validate
+    # Step 3: Validate & format
+    terraform validate
+    terraform fmt -recursive
 
-echo "📝 Step 4: Formatting Terraform files..."
-terraform fmt -recursive
+    # Step 4: Plan destroy
+    terraform plan -destroy -var-file="$VAR_FILE"
 
-echo "🔍 Step 5: Showing plan for destroy..."
-terraform plan -destroy -var-file="$VAR_FILE"
+    # Step 5: Confirm destroy
+    read -p "Type 'destroy' to actually destroy $env: " confirm
+    if [ "$confirm" == "destroy" ]; then
+        terraform destroy -var-file="$VAR_FILE" -auto-approve
+        echo "✅ Destroyed $env successfully!"
+    else
+        echo "❌ Destroy aborted for $env."
+    fi
 
-echo "🛑 WARNING: This will permanently destroy the S3 bucket and DynamoDB table for '$env'!"
-read -p "Type 'destroy' to continue: " confirm
+    # Step 6: Re-enable backend.tf if disabled
+    if [ -f backend.tf.disabled ]; then
+        mv backend.tf.disabled backend.tf
+    fi
 
-if [ "$confirm" == "destroy" ]; then
-    echo "🔥 Destroying S3 and DynamoDB infrastructure..."
-    terraform destroy -var-file="$VAR_FILE" -auto-approve
-
-    echo "📊 Showing final Terraform state..."
-    terraform show
-else
-    echo "❌ Destroy aborted by user."
-fi
-
-# Optional: Restore backend.tf after destroy
-if [ -f backend.tf.disabled ]; then
-  mv backend.tf.disabled backend.tf
-  echo "🔁 backend.tf restored."
-fi
+done
