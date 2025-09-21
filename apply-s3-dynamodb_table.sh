@@ -1,41 +1,19 @@
 #!/bin/bash
+set -e
 
-echo "=============================="
-echo "🌐 Deploying all environments with Terraform Workspaces"
-echo "=============================="
+# Terraform init with backend config
+echo "🌐 Initializing Terraform..."
+terraform init -backend-config="backend-${1}.hcl"
 
-# Define environments
-environments=("prod" "staging" "qa")
+# Create global resources only once (default workspace)
+echo "🚀 Applying Global Resources..."
+terraform workspace select default || terraform workspace new default
+terraform apply -target=aws_s3_bucket.terraform_backend -target=aws_dynamodb_table.terraform_lock -auto-approve
 
-for env in "${environments[@]}"; do
-    echo "=============================="
-    echo "🌐 Deploying environment: $env"
+# Apply workspace-specific resources
+echo "🌐 Deploying environment: $1"
+terraform workspace select $1 || terraform workspace new $1
+terraform plan -out=tfplan_$1.out
+terraform apply tfplan_$1.out
 
-    BACKEND_FILE="backend-$env.hcl"
-
-    echo "Using backend file: $BACKEND_FILE"
-
-    # Initialize Terraform with backend config
-    terraform init -backend-config="$BACKEND_FILE"
-
-    # Create or select workspace
-    if terraform workspace list | grep -q "$env"; then
-        terraform workspace select "$env"
-        echo "✅ Selected existing workspace: $env"
-    else
-        terraform workspace new "$env"
-        echo "✅ Created and selected workspace: $env"
-    fi
-
-    # Validate and format
-    terraform validate
-    terraform fmt -recursive
-
-    # Plan and apply
-    PLAN_FILE="tfplan_$env.out"
-    terraform plan -out="$PLAN_FILE"
-    echo "🚀 Applying plan for $env..."
-    terraform apply "$PLAN_FILE"
-
-    echo "✅ Deployment for $env completed!"
-done
+echo "✅ Deployment for $1 completed!"
