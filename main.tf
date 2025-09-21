@@ -1,4 +1,4 @@
-# S3 Bucket (Private)
+# Private S3 Bucket
 resource "aws_s3_bucket" "private_bucket" {
   bucket = var.s3_bucket_name
   acl    = "private"
