@@ -1,9 +1,6 @@
-output "s3_bucket_name" {
-  value       = aws_s3_bucket.terraform_backend.id
-  description = "Name of the S3 bucket used for backend"
+output "dynamodb_table_names" {
+  value = [for k, t in aws_dynamodb_table.terraform_lock : t.name if k == terraform.workspace]
 }
 
-output "dynamodb_table_names" {
-  value       = [for t in aws_dynamodb_table.terraform_lock : t.name]
-  description = "List of DynamoDB tables used for state locking"
-}
+output "s3_bucket_name" {
+  value = terraform.workspace == "prod" ? aws_s3_bucket.terraform_backend[0].bucket : "terraform-backend-all-env"
