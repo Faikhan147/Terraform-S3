@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "private_bucket" {
   }
 }
 
-# Versioning as separate resource
+# Enable versioning
 resource "aws_s3_bucket_versioning" "private_bucket_versioning" {
   bucket = aws_s3_bucket.private_bucket.id
   versioning_configuration {
@@ -16,17 +16,11 @@ resource "aws_s3_bucket_versioning" "private_bucket_versioning" {
   }
 }
 
-# Set ACL separately to avoid deprecation warning
-resource "aws_s3_bucket_acl" "private_bucket_acl" {
-  bucket = aws_s3_bucket.private_bucket.id
-  acl    = "private"
-}
-
 # DynamoDB tables
 resource "aws_dynamodb_table" "tables" {
   for_each = toset(var.dynamodb_tables)
 
-  name           = each.value
+  name           = each.key
   billing_mode   = "PROVISIONED"
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
