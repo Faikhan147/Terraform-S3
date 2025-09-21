@@ -1,33 +1,35 @@
-# S3 bucket for all environments
-resource "aws_s3_bucket" "backend" {
-  bucket = var.bucket_name
-  force_destroy = true
-}
+# S3 backend bucket
+resource "aws_s3_bucket" "terraform_backend" {
+  bucket = "terraform-backend-all-env"
+  acl    = "private"
 
-resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.backend.id
-  versioning_configuration {
-    status = "Enabled"
+  versioning {
+    enabled = true
   }
-}
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "sse" {
-  bucket = aws_s3_bucket.backend.id
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = var.kms_key_arn
-      sse_algorithm     = "aws:kms"
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
     }
   }
+
+  tags = {
+    Name = "Terraform Backend Bucket"
+  }
 }
 
-# DynamoDB lock tables for each environment
-resource "aws_dynamodb_table" "locks" {
-  for_each = toset(var.dynamodb_tables)
+# DynamoDB lock tables
+locals {
+  tables = ["prod", "staging", "qa"]
+}
 
-  name         = each.value
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
+resource "aws_dynamodb_table" "terraform_lock" {
+  for_each      = toset(local.tables)
+  name          = "terraform-locks-${each.key}"
+  billing_mode  = "PAY_PER_REQUEST"
+  hash_key      = "LockID"
 
   attribute {
     name = "LockID"
@@ -35,6 +37,6 @@ resource "aws_dynamodb_table" "locks" {
   }
 
   tags = {
-    Environment = each.value
+    Name = "Terraform Lock Table"
   }
 }
