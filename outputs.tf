@@ -3,5 +3,5 @@ output "s3_bucket_name" {
 }
 
 output "dynamodb_table_names" {
-  value = [for table in aws_dynamodb_table.terraform_lock : table.name]
+  value = [for table in aws_dynamodb_table.terraform_lock : table.id]
 }
