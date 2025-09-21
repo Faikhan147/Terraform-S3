@@ -11,11 +11,3 @@ variable "dynamodb_tables" {
   description = "List of DynamoDB table names for state locking"
   type        = list(string)
 }
-
-variable "dynamodb_read_capacity" {
-  default = 5
-}
-
-variable "dynamodb_write_capacity" {
-  default = 5
-}
