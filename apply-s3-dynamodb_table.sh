@@ -29,6 +29,12 @@ for env in "${environments[@]}"; do
         echo "✅ Created and selected workspace: $env"
     fi
 
+    # Import existing DynamoDB tables (if not already in state)
+    echo "🔄 Importing existing DynamoDB tables (if not present)"
+    for table in prod staging qa; do
+        terraform import -lock=false aws_dynamodb_table.terraform_lock["$table"] "terraform-locks-$table" || true
+    done
+
     # Validate and format
     terraform validate
     terraform fmt -recursive
