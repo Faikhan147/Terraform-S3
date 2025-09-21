@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "private_bucket" {
   }
 }
 
-# Explicitly block all public access
+# Block all public access
 resource "aws_s3_bucket_public_access_block" "private_bucket_block" {
   bucket = aws_s3_bucket.private_bucket.id
 
@@ -16,12 +16,6 @@ resource "aws_s3_bucket_public_access_block" "private_bucket_block" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-# Explicitly set ACL to private
-resource "aws_s3_bucket_acl" "private_acl" {
-  bucket = aws_s3_bucket.private_bucket.id
-  acl    = "private"
 }
 
 # Enable versioning
