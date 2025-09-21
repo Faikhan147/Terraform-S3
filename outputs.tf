@@ -3,5 +3,5 @@ output "s3_bucket_name" {
 }
 
 output "dynamodb_tables" {
-  value = [for t in aws_dynamodb_table.tables : t.name]
+  value = aws_dynamodb_table.tables[*].name
 }
