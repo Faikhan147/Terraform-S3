@@ -1,4 +1,4 @@
-# GLOBAL RESOURCES (Single Create)
+# GLOBAL RESOURCES
 # -------------------------
 resource "aws_s3_bucket" "terraform_backend" {
   bucket = "terraform-backend-all-env"
@@ -39,11 +39,9 @@ resource "aws_dynamodb_table" "terraform_lock" {
 
 # -------------------------
 # WORKSPACE-SPECIFIC RESOURCES
-# (Yahan aapki har env ka infra add karein)
 # -------------------------
-# Example:
 resource "aws_s3_bucket_object" "workspace_file" {
-  bucket = aws_s3_bucket.terraform_backend.id
-  key    = "${terraform.workspace}-test.txt"
+  bucket  = aws_s3_bucket.terraform_backend.id
+  key     = "${terraform.workspace}-test.txt"
   content = "Hello from ${terraform.workspace}"
 }
