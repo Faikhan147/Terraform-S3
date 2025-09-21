@@ -1,9 +1,9 @@
-# Safe output for terraform_backend S3 bucket
 output "s3_bucket_name" {
-  value = length(aws_s3_bucket.terraform_backend) > 0 ? aws_s3_bucket.terraform_backend[0].id : "No bucket in this workspace"
+  description = "The name of the S3 bucket used for Terraform state."
+  value       = aws_s3_bucket.terraform_backend[0].id
 }
 
-# DynamoDB lock tables output (already working)
 output "dynamodb_table_names" {
-  value = [for table in aws_dynamodb_table.terraform_lock : table.name]
+  description = "List of DynamoDB tables used for Terraform state locking."
+  value       = [for table in aws_dynamodb_table.terraform_lock : table.id]
 }
