@@ -15,32 +15,39 @@ fi
 echo "🔹 Step 1: Initialize Terraform backend..."
 terraform init -reconfigure
 
-# Get S3 bucket name from Terraform output
-BUCKET_NAME=$(terraform output -raw s3_bucket_name || true)
+# --- fetch outputs safely ---
+raw_bucket=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
+tables_json=$(terraform output -json dynamodb_tables 2>/dev/null || echo "[]")
 
-if [ -n "$BUCKET_NAME" ]; then
-    echo "🗑️ Step 2: Emptying bucket $BUCKET_NAME (all objects + versions)..."
-
-    # Delete all object versions (if versioning enabled)
-    aws s3api list-object-versions --bucket "$BUCKET_NAME" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json | \
-    jq -c '.[]?' | while read obj; do
-        KEY=$(echo $obj | jq -r '.Key')
-        VERSION=$(echo $obj | jq -r '.VersionId')
-        aws s3api delete-object --bucket "$BUCKET_NAME" --key "$KEY" --version-id "$VERSION"
-    done
-
-    # Delete all delete markers
-    aws s3api list-object-versions --bucket "$BUCKET_NAME" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json | \
-    jq -c '.[]?' | while read obj; do
-        KEY=$(echo $obj | jq -r '.Key')
-        VERSION=$(echo $obj | jq -r '.VersionId')
-        aws s3api delete-object --bucket "$BUCKET_NAME" --key "$KEY" --version-id "$VERSION"
-    done
-
-    echo "✅ Bucket $BUCKET_NAME emptied"
+# --- validate bucket name (only allow alnum . - _) ---
+if [[ "$raw_bucket" =~ ^[a-zA-Z0-9.\-_]{3,255}$ ]]; then
+  bucket="$raw_bucket"
+else
+  bucket=""
 fi
 
-echo "🔹 Step 3: Destroy all resources (S3 + DynamoDB) via Terraform..."
-terraform destroy -var-file="$VAR_FILE" -auto-approve
+# ---------- S3 ----------
+if [ -n "$bucket" ]; then
+  echo "🗑️ Step 2: Emptying & deleting bucket: $bucket"
+  aws s3 rm "s3://$bucket" --recursive || true
+  aws s3 rb "s3://$bucket" --force || true
+  echo "✅ Bucket $bucket emptied & deleted"
+else
+  echo "⚠️ No valid s3_bucket_name output found. Skipping S3 deletion."
+fi
+
+# ---------- DynamoDB ----------
+if [ "$tables_json" != "[]" ]; then
+  echo "🗑️ Step 3: Deleting DynamoDB tables..."
+  echo "$tables_json" | jq -r '.[]' | while read -r table; do
+    [ -n "$table" ] && echo "Deleting table: $table" && aws dynamodb delete-table --table-name "$table" || true
+  done
+  echo "✅ DynamoDB tables deleted"
+else
+  echo "⚠️ No dynamodb_tables output found. Skipping DynamoDB deletion."
+fi
+
+echo "🔹 Step 4: Destroy Terraform resources (state cleanup)..."
+terraform destroy -auto-approve || true
 
 echo "✅ All resources destroyed successfully!"
