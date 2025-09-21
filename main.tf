@@ -32,8 +32,6 @@ resource "aws_dynamodb_table" "tables" {
 
   name           = each.key
   billing_mode   = "PAY_PER_REQUEST"
-  read_capacity  = var.dynamodb_read_capacity
-  write_capacity = var.dynamodb_write_capacity
   hash_key       = "LockID"
 
   attribute {
