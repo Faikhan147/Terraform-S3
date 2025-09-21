@@ -1,36 +1,27 @@
-# s3.tf
+# --- S3 Bucket (Terraform backend) ---
 resource "aws_s3_bucket" "terraform_backend" {
   bucket = "terraform-backend-all-env"
+
+  # ACL remove kar diya
+  # acl = "private"   <-- REMOVE THIS
   force_destroy = true
-  tags = {
-    Environment = "Terraform"
-  }
 }
 
-# Versioning separate
-resource "aws_s3_bucket_versioning" "backend_versioning" {
+# Optional: enable versioning via separate resource
+resource "aws_s3_bucket_versioning" "versioning" {
   bucket = aws_s3_bucket.terraform_backend.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-# workspace files
-locals {
-  workspaces = ["prod", "staging", "qa"]
+# --- DynamoDB tables for locks ---
+variable "envs" {
+  default = ["prod", "qa", "staging"]
 }
 
-resource "aws_s3_object" "workspace_file" {
-  for_each = toset(local.workspaces)
-  bucket   = aws_s3_bucket.terraform_backend.id
-  key      = "${each.key}-test.txt"
-  content  = "Hello from ${each.key}"
-  force_destroy = true
-}
-
-# DynamoDB tables for locks
 resource "aws_dynamodb_table" "terraform_lock" {
-  for_each = toset(local.workspaces)
+  for_each     = toset(var.envs)
   name         = "terraform-locks-${each.key}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
@@ -38,9 +29,5 @@ resource "aws_dynamodb_table" "terraform_lock" {
   attribute {
     name = "LockID"
     type = "S"
-  }
-
-  tags = {
-    Environment = each.key
   }
 }
