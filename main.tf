@@ -1,47 +1,44 @@
-# S3 Bucket for Terraform backend
+# ===== S3 Backend Bucket =====
 resource "aws_s3_bucket" "terraform_backend" {
-  bucket        = var.bucket_name
+  count = terraform.workspace == "prod" ? 1 : 0  # Only create for prod
+
+  bucket = "terraform-backend-all-env"
   force_destroy = true
 
   tags = {
     Name = "Terraform Backend Bucket"
   }
-}
 
-resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.terraform_backend.id
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm     = "aws:kms"
+        kms_master_key_id = "arn:aws:kms:ap-south-1:923884399206:alias/aws/s3"
+      }
+      bucket_key_enabled = true
+    }
+  }
 
-  versioning_configuration {
+  versioning {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
-  bucket = aws_s3_bucket.terraform_backend.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      kms_master_key_id = var.kms_key_arn
-      sse_algorithm     = "aws:kms"
-    }
-    bucket_key_enabled = true
-  }
-}
-
 resource "aws_s3_bucket_public_access_block" "block_public_access" {
-  bucket                  = aws_s3_bucket.terraform_backend.id
+  count = terraform.workspace == "prod" ? 1 : 0
+
+  bucket = aws_s3_bucket.terraform_backend[0].id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-# DynamoDB table for state locking
+# ===== DynamoDB Lock Table =====
 resource "aws_dynamodb_table" "terraform_lock" {
-  for_each    = toset(var.dynamodb_tables)
-  name        = each.value
+  name         = "terraform-locks-${terraform.workspace}"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key    = "LockID"
+  hash_key     = "LockID"
 
   attribute {
     name = "LockID"
