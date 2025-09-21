@@ -1,11 +1,9 @@
-# Private S3 Bucket
+# Private S3 bucket
 resource "aws_s3_bucket" "private_bucket" {
   bucket = var.s3_bucket_name
   acl    = "private"
 
-  versioning {
-    enabled = true
-  }
+  versioning { enabled = true }
 
   tags = {
     Name        = var.s3_bucket_name
@@ -13,7 +11,7 @@ resource "aws_s3_bucket" "private_bucket" {
   }
 }
 
-# DynamoDB Tables
+# DynamoDB tables
 resource "aws_dynamodb_table" "tables" {
   for_each = toset(var.dynamodb_tables)
 
@@ -23,12 +21,7 @@ resource "aws_dynamodb_table" "tables" {
   write_capacity = var.dynamodb_write_capacity
   hash_key       = "id"
 
-  attribute {
-    name = "id"
-    type = "S"
-  }
+  attribute { name = "id"; type = "S" }
 
-  tags = {
-    Environment = "prod"
-  }
+  tags = { Environment = "prod" }
 }
