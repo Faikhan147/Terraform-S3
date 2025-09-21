@@ -1,11 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "🌐 Initializing Terraform..."
-terraform init
+ENVIRONMENTS=("prod" "staging" "qa")
 
-echo "🚀 Applying S3 Bucket and DynamoDB Tables..."
-terraform apply -auto-approve
+for ENV in "${ENVIRONMENTS[@]}"; do
+    echo "🌐 Initializing Terraform backend for $ENV..."
+    terraform init -backend-config="backend-${ENV}.hcl"
 
-echo "✅ Deployment completed!"
+    echo "🚀 Applying resources for $ENV..."
+    terraform workspace select $ENV 2>/dev/null || terraform workspace new $ENV
+    terraform apply -auto-approve
+
+    echo "✅ Deployment completed for $ENV!"
+done
+
+echo "🎉 All environments deployed successfully!"
 terraform output
