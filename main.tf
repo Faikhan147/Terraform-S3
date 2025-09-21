@@ -1,33 +1,34 @@
-# --- S3 Bucket (Terraform backend) ---
-resource "aws_s3_bucket" "terraform_backend" {
-  bucket = "terraform-backend-all-env"
+# S3 Bucket (Private)
+resource "aws_s3_bucket" "private_bucket" {
+  bucket = var.s3_bucket_name
+  acl    = "private"
 
-  # ACL remove kar diya
-  # acl = "private"   <-- REMOVE THIS
-  force_destroy = true
-}
+  versioning {
+    enabled = true
+  }
 
-# Optional: enable versioning via separate resource
-resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.terraform_backend.id
-  versioning_configuration {
-    status = "Enabled"
+  tags = {
+    Name        = var.s3_bucket_name
+    Environment = "prod"
   }
 }
 
-# --- DynamoDB tables for locks ---
-variable "envs" {
-  default = ["prod", "qa", "staging"]
-}
+# DynamoDB Tables
+resource "aws_dynamodb_table" "tables" {
+  for_each = toset(var.dynamodb_tables)
 
-resource "aws_dynamodb_table" "terraform_lock" {
-  for_each     = toset(var.envs)
-  name         = "terraform-locks-${each.key}"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
+  name           = each.key
+  billing_mode   = "PROVISIONED"
+  read_capacity  = var.dynamodb_read_capacity
+  write_capacity = var.dynamodb_write_capacity
+  hash_key       = "id"
 
   attribute {
-    name = "LockID"
+    name = "id"
     type = "S"
+  }
+
+  tags = {
+    Environment = "prod"
   }
 }
