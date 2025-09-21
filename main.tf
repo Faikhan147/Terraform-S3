@@ -37,7 +37,7 @@ resource "aws_dynamodb_table" "tables" {
   hash_key       = "id"
 
   attribute {
-    name = "id"
+    name = "LockID"
     type = "S"
   }
 
