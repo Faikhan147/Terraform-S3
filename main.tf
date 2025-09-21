@@ -2,13 +2,17 @@
 resource "aws_s3_bucket" "private_bucket" {
   bucket = var.s3_bucket_name
 
-  versioning {
-    enabled = true
-  }
-
   tags = {
     Name        = var.s3_bucket_name
     Environment = "prod"
+  }
+}
+
+# Versioning as separate resource
+resource "aws_s3_bucket_versioning" "private_bucket_versioning" {
+  bucket = aws_s3_bucket.private_bucket.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
