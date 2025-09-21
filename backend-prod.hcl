@@ -1,4 +1,4 @@
-bucket         = "my-terraform-state-bucket"
+bucket         = "my-private-bucket-ap-south-1"
 key            = "prod/terraform.tfstate"
 region         = "ap-south-1"
 dynamodb_table = "terraform-lock-table"
