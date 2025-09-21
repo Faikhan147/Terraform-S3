@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "=============================="
-echo "🌐 Deploying all environments with multi-DynamoDB support"
+echo "🌐 Deploying all environments with Terraform Workspaces"
 echo "=============================="
 
 # Define environments
@@ -17,18 +17,25 @@ for env in "${environments[@]}"; do
     echo "Using variables file: $VAR_FILE"
     echo "Using backend file: $BACKEND_FILE"
 
-    # Initialize Terraform with backend for this environment
-    terraform init -backend-config="$BACKEND_FILE" -reconfigure
+    # Initialize Terraform with backend config
+    terraform init -backend-config="$BACKEND_FILE"
+
+    # Create or select workspace
+    if terraform workspace list | grep -q "$env"; then
+        terraform workspace select "$env"
+        echo "✅ Selected existing workspace: $env"
+    else
+        terraform workspace new "$env"
+        echo "✅ Created and selected workspace: $env"
+    fi
 
     # Validate and format
     terraform validate
     terraform fmt -recursive
 
-    # Create plan
+    # Plan and apply
     PLAN_FILE="tfplan_$env.out"
     terraform plan -var-file="$VAR_FILE" -out="$PLAN_FILE"
-
-    # Apply plan
     echo "🚀 Applying plan for $env..."
     terraform apply -var-file="$VAR_FILE" "$PLAN_FILE"
 
