@@ -3,7 +3,7 @@ output "s3_bucket_name" {
   description = "Name of the S3 bucket used for backend"
 }
 
-output "dynamodb_table_name" {
-  value       = aws_dynamodb_table.terraform_lock.name
-  description = "DynamoDB table used for state locking"
+output "dynamodb_table_names" {
+  value       = [for t in aws_dynamodb_table.terraform_lock : t.name]
+  description = "List of DynamoDB tables used for state locking"
 }
