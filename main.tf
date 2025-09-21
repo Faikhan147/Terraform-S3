@@ -1,11 +1,8 @@
-# S3 backend bucket
+# GLOBAL RESOURCES (Single Create)
+# -------------------------
 resource "aws_s3_bucket" "terraform_backend" {
   bucket = "terraform-backend-all-env"
   acl    = "private"
-
-  versioning {
-    enabled = true
-  }
 
   server_side_encryption_configuration {
     rule {
@@ -15,28 +12,38 @@ resource "aws_s3_bucket" "terraform_backend" {
     }
   }
 
-  tags = {
-    Name = "Terraform Backend Bucket"
+  versioning {
+    enabled = true
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
-# DynamoDB lock tables
-locals {
-  tables = ["prod", "staging", "qa"]
-}
-
 resource "aws_dynamodb_table" "terraform_lock" {
-  for_each      = toset(local.tables)
-  name          = "terraform-locks-${each.key}"
-  billing_mode  = "PAY_PER_REQUEST"
-  hash_key      = "LockID"
+  for_each     = toset(["prod", "staging", "qa"])
+  name         = "terraform-locks-${each.key}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
 
   attribute {
     name = "LockID"
     type = "S"
   }
 
-  tags = {
-    Name = "Terraform Lock Table"
+  lifecycle {
+    prevent_destroy = true
   }
+}
+
+# -------------------------
+# WORKSPACE-SPECIFIC RESOURCES
+# (Yahan aapki har env ka infra add karein)
+# -------------------------
+# Example:
+resource "aws_s3_bucket_object" "workspace_file" {
+  bucket = aws_s3_bucket.terraform_backend.id
+  key    = "${terraform.workspace}-test.txt"
+  content = "Hello from ${terraform.workspace}"
 }
