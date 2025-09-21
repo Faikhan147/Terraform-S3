@@ -3,33 +3,29 @@
 set -e
 
 echo "=============================="
-echo "🌐 Destroying all environments with multi-DynamoDB support"
+echo "🌐 Destroying all environments with Terraform Workspaces"
 echo "=============================="
 
-# Define environments
 environments=("prod" "staging" "qa")
 
 for env in "${environments[@]}"; do
     echo "=============================="
     echo "🌐 Destroying environment: $env"
-    
+
     VAR_FILE="terraform.tfvars.$env"
     BACKEND_FILE="backend-$env.hcl"
-    
-    echo "Using variables file: $VAR_FILE"
-    echo "Using backend file: $BACKEND_FILE"
 
-    # Initialize Terraform
-    terraform init -reconfigure -backend-config="$BACKEND_FILE" -var-file="$VAR_FILE"
+    # Initialize backend
+    terraform init -backend-config="$BACKEND_FILE"
 
-    # Validate and format
+    # Select workspace
+    terraform workspace select "$env"
+    echo "✅ Selected workspace: $env"
+
     terraform validate
     terraform fmt -recursive
 
-    # Plan destroy
-    terraform plan -destroy -var-file="$VAR_FILE"
-
-    echo "🛑 WARNING: This will permanently destroy all DynamoDB tables for '$env'!"
+    echo "🛑 WARNING: This will permanently destroy all resources for '$env'!"
     read -p "Type 'destroy' to continue: " confirm
 
     if [ "$confirm" == "destroy" ]; then
