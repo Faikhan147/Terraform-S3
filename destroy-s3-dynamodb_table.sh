@@ -28,8 +28,21 @@ fi
 
 # ---------- S3 ----------
 if [ -n "$bucket" ]; then
-  echo "🗑️ Step 2: Emptying & deleting bucket: $bucket"
-  aws s3 rm "s3://$bucket" --recursive || true
+  echo "🗑️ Step 2: Deleting all objects & versions in bucket: $bucket"
+
+  # Delete all versions
+  aws s3api list-object-versions --bucket "$bucket" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output text | \
+  while read key version; do
+      aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
+  done
+
+  # Delete all delete markers
+  aws s3api list-object-versions --bucket "$bucket" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output text | \
+  while read key version; do
+      aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
+  done
+
+  # Finally remove the bucket
   aws s3 rb "s3://$bucket" --force || true
   echo "✅ Bucket $bucket emptied & deleted"
 else
