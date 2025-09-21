@@ -1,19 +1,19 @@
 variable "region" {
-  description = "AWS region for backend resources"
   type        = string
+  description = "AWS region"
 }
 
 variable "bucket_name" {
-  description = "S3 bucket name for Terraform remote backend"
   type        = string
-}
-
-variable "dynamodb_table_name" {
-  description = "DynamoDB table name for Terraform state locking"
-  type        = string
+  description = "S3 bucket name"
 }
 
 variable "kms_key_arn" {
-  description = "KMS Key ARN for S3 encryption"
   type        = string
+  description = "KMS key ARN for S3 encryption"
+}
+
+variable "dynamodb_tables" {
+  type        = list(string)
+  description = "List of DynamoDB table names for state locking"
 }
