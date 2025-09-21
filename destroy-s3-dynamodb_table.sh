@@ -3,28 +3,44 @@ set -e
 set -u
 
 VAR_FILE="terraform.tfvars"
+BACKEND_BAK="backend.tf.bak"
 BACKEND_FILE="backend.tf"
-TMP_BACKEND_FILE="backend.tf.bak"
 
-echo "🔹 Step 0: Temporarily rename backend.tf to avoid S3 backend errors..."
-if [ -f "$BACKEND_FILE" ]; then
-    mv "$BACKEND_FILE" "$TMP_BACKEND_FILE"
-    echo "✅ backend.tf renamed to $TMP_BACKEND_FILE"
+echo "🔹 Step 0: Restore backend.tf from backup if exists..."
+if [ -f "$BACKEND_BAK" ]; then
+    mv "$BACKEND_BAK" "$BACKEND_FILE"
+    echo "✅ backend.tf restored from $BACKEND_BAK"
 fi
 
-echo "🔹 Step 1: Destroy resources locally first (local backend)..."
-terraform init -backend=false
-terraform destroy -auto-approve -var-file="$VAR_FILE"
-
-echo "🔹 Step 2: Restore backend.tf and initialize S3 backend..."
-if [ -f "$TMP_BACKEND_FILE" ]; then
-    mv "$TMP_BACKEND_FILE" "$BACKEND_FILE"
-    echo "✅ backend.tf restored"
-fi
-
+echo "🔹 Step 1: Initialize Terraform backend..."
 terraform init -reconfigure
 
-echo "🔹 Step 3: Destroy remaining resources (optional)..."
-terraform destroy -auto-approve -var-file="$VAR_FILE"
+# Get S3 bucket name from Terraform output
+BUCKET_NAME=$(terraform output -raw s3_bucket_name || true)
 
-echo "✅ Destruction completed successfully!"
+if [ -n "$BUCKET_NAME" ]; then
+    echo "🗑️ Step 2: Emptying bucket $BUCKET_NAME (all objects + versions)..."
+
+    # Delete all object versions (if versioning enabled)
+    aws s3api list-object-versions --bucket "$BUCKET_NAME" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json | \
+    jq -c '.[]?' | while read obj; do
+        KEY=$(echo $obj | jq -r '.Key')
+        VERSION=$(echo $obj | jq -r '.VersionId')
+        aws s3api delete-object --bucket "$BUCKET_NAME" --key "$KEY" --version-id "$VERSION"
+    done
+
+    # Delete all delete markers
+    aws s3api list-object-versions --bucket "$BUCKET_NAME" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json | \
+    jq -c '.[]?' | while read obj; do
+        KEY=$(echo $obj | jq -r '.Key')
+        VERSION=$(echo $obj | jq -r '.VersionId')
+        aws s3api delete-object --bucket "$BUCKET_NAME" --key "$KEY" --version-id "$VERSION"
+    done
+
+    echo "✅ Bucket $BUCKET_NAME emptied"
+fi
+
+echo "🔹 Step 3: Destroy all resources (S3 + DynamoDB) via Terraform..."
+terraform destroy -var-file="$VAR_FILE" -auto-approve
+
+echo "✅ All resources destroyed successfully!"
