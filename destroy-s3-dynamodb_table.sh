@@ -1,37 +1,30 @@
 #!/bin/bash
-
 set -e
+set -u
 
-echo "=============================="
-echo "🌐 Destroying all environments with Terraform Workspaces"
-echo "=============================="
+VAR_FILE="terraform.tfvars"
+BACKEND_FILE="backend.tf"
+TMP_BACKEND_FILE="backend.tf.bak"
 
-environments=("prod" "staging" "qa")
+echo "🔹 Step 0: Temporarily rename backend.tf to avoid S3 backend errors..."
+if [ -f "$BACKEND_FILE" ]; then
+    mv "$BACKEND_FILE" "$TMP_BACKEND_FILE"
+    echo "✅ backend.tf renamed to $TMP_BACKEND_FILE"
+fi
 
-for env in "${environments[@]}"; do
-    echo "=============================="
-    echo "🌐 Destroying environment: $env"
+echo "🔹 Step 1: Destroy resources locally first (local backend)..."
+terraform init -backend=false
+terraform destroy -auto-approve -var-file="$VAR_FILE"
 
-    VAR_FILE="terraform.tfvars.$env"
-    BACKEND_FILE="backend-$env.hcl"
+echo "🔹 Step 2: Restore backend.tf and initialize S3 backend..."
+if [ -f "$TMP_BACKEND_FILE" ]; then
+    mv "$TMP_BACKEND_FILE" "$BACKEND_FILE"
+    echo "✅ backend.tf restored"
+fi
 
-    # Initialize backend
-    terraform init -backend-config="$BACKEND_FILE"
+terraform init -reconfigure
 
-    # Select workspace
-    terraform workspace select "$env"
-    echo "✅ Selected workspace: $env"
+echo "🔹 Step 3: Destroy remaining resources (optional)..."
+terraform destroy -auto-approve -var-file="$VAR_FILE"
 
-    terraform validate
-    terraform fmt -recursive
-
-    echo "🛑 WARNING: This will permanently destroy all resources for '$env'!"
-    read -p "Type 'destroy' to continue: " confirm
-
-    if [ "$confirm" == "destroy" ]; then
-        terraform destroy -var-file="$VAR_FILE" -auto-approve
-        echo "✅ Destroy completed for $env"
-    else
-        echo "❌ Destroy aborted for $env"
-    fi
-done
+echo "✅ Destruction completed successfully!"
