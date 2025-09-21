@@ -26,27 +26,27 @@ else
   bucket=""
 fi
 
-# ---------- S3 ----------
+# --- manually set bucket ---
+bucket="terraform-backend-all-env"
+
+
 if [ -n "$bucket" ]; then
   echo "🗑️ Step 2: Deleting all objects & versions in bucket: $bucket"
 
-# Delete all versions
-aws s3api list-object-versions --bucket "$bucket" --output json | jq -r '.Versions[] | "\(.Key) \(.VersionId)"' | while read -r key version; do
-    aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
-done
+  aws s3api list-object-versions --bucket "$bucket" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output text | \
+  while read key version; do
+      aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
+  done
 
-# Delete all delete markers
-aws s3api list-object-versions --bucket "$bucket" --output json | jq -r '.DeleteMarkers[] | "\(.Key) \(.VersionId)"' | while read -r key version; do
-    aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
-done
+  aws s3api list-object-versions --bucket "$bucket" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output text | \
+  while read key version; do
+      aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$version" || true
+  done
 
-
-  # Finally remove the bucket
   aws s3 rb "s3://$bucket" --force || true
   echo "✅ Bucket $bucket emptied & deleted"
-else
-  echo "⚠️ No valid s3_bucket_name output found. Skipping S3 deletion."
 fi
+
 
 # ---------- DynamoDB ----------
 if [ "$tables_json" != "[]" ]; then
