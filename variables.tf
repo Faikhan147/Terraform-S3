@@ -8,9 +8,8 @@ variable "s3_bucket_name" {
 }
 
 variable "dynamodb_tables" {
-  description = "List of DynamoDB table names"
+  description = "List of DynamoDB table names for state locking"
   type        = list(string)
-  default     = ["table1", "table2", "table3"]
 }
 
 variable "dynamodb_read_capacity" {
