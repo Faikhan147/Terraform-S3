@@ -1,1 +1,1 @@
-s3_bucket_name = "my-private-bucket-ap-south-1"
+s3_bucket_name = "terraform-backend-all-env"
