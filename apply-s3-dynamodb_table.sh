@@ -1,43 +1,50 @@
 #!/bin/bash
 
-ENVS=("prod" "staging" "qa")
+echo "=============================="
+echo "🌐 Deploying all environments with multi-DynamoDB support"
+echo "=============================="
 
-for env in "${ENVS[@]}"; do
-    VAR_FILE="terraform.tfvars.$env"
-    BACKEND_FILE="backend-$env.hcl"
+# Define environments
+environments=("prod" "staging" "qa")
 
+for env in "${environments[@]}"; do
     echo "=============================="
     echo "🌐 Deploying environment: $env"
+    
+    VAR_FILE="terraform.tfvars.$env"
+    BACKEND_FILE="backend-$env.hcl"
+    
     echo "Using variables file: $VAR_FILE"
     echo "Using backend file: $BACKEND_FILE"
-    echo "=============================="
-
-    # Step 1: Disable backend.tf temporarily
+    
+    # Temporarily disable backend.tf if exists
     if [ -f backend.tf ]; then
         mv backend.tf backend.tf.disabled
+        echo "🔒 backend.tf disabled."
     fi
 
-    # Step 2: Initialize Terraform with local backend first
-    terraform init -reconfigure -backend-config="$BACKEND_FILE"
+    # Initialize Terraform locally
+    terraform init -backend-config="$BACKEND_FILE"
 
-    # Step 3: Validate & format
+    # Validate and format
     terraform validate
     terraform fmt -recursive
 
-    # Step 4: Create plan
+    # Create plan
     PLAN_FILE="tfplan_$env.out"
     terraform plan -var-file="$VAR_FILE" -out="$PLAN_FILE"
 
-    # Step 5: Apply plan
+    # Apply plan
+    echo "🚀 Applying plan for $env..."
     terraform apply -var-file="$VAR_FILE" "$PLAN_FILE"
 
-    # Step 6: Re-enable backend.tf if disabled
+    # Re-enable backend.tf
     if [ -f backend.tf.disabled ]; then
         mv backend.tf.disabled backend.tf
+        echo "🔓 backend.tf re-enabled."
     fi
 
-    # Step 7: Initialize remote backend
-    terraform init -reconfigure -backend-config="$BACKEND_FILE"
-
+    # Reinitialize with remote backend
+    terraform init -reconfigure -backend-config="$BACKEND_FILE" -var-file="$VAR_FILE"
     echo "✅ Deployment for $env completed!"
 done
