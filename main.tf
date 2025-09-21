@@ -1,7 +1,10 @@
 # Private S3 bucket
 resource "aws_s3_bucket" "private_bucket" {
   bucket = var.s3_bucket_name
-  acl    = "private"
+
+  versioning {
+    enabled = true
+  }
 
   tags = {
     Name        = var.s3_bucket_name
@@ -9,11 +12,17 @@ resource "aws_s3_bucket" "private_bucket" {
   }
 }
 
+# Set ACL separately to avoid deprecation warning
+resource "aws_s3_bucket_acl" "private_bucket_acl" {
+  bucket = aws_s3_bucket.private_bucket.id
+  acl    = "private"
+}
+
 # DynamoDB tables
 resource "aws_dynamodb_table" "tables" {
   for_each = toset(var.dynamodb_tables)
 
-  name           = each.key
+  name           = each.value
   billing_mode   = "PROVISIONED"
   read_capacity  = var.dynamodb_read_capacity
   write_capacity = var.dynamodb_write_capacity
