@@ -2,45 +2,40 @@
 
 set -e
 
-ENVS=("prod" "staging" "qa")
+echo "=============================="
+echo "🌐 Destroying all environments with multi-DynamoDB support"
+echo "=============================="
 
-for env in "${ENVS[@]}"; do
+# Define environments
+environments=("prod" "staging" "qa")
+
+for env in "${environments[@]}"; do
+    echo "=============================="
+    echo "🌐 Destroying environment: $env"
+    
     VAR_FILE="terraform.tfvars.$env"
     BACKEND_FILE="backend-$env.hcl"
-
-    echo "=============================="
-    echo "⚠️ Destroying environment: $env"
+    
     echo "Using variables file: $VAR_FILE"
     echo "Using backend file: $BACKEND_FILE"
-    echo "=============================="
 
-    # Step 1: Disable backend.tf temporarily
-    if [ -f backend.tf ]; then
-        mv backend.tf backend.tf.disabled
-    fi
+    # Initialize Terraform
+    terraform init -reconfigure -backend-config="$BACKEND_FILE" -var-file="$VAR_FILE"
 
-    # Step 2: Initialize Terraform
-    terraform init -reconfigure -backend-config="$BACKEND_FILE"
-
-    # Step 3: Validate & format
+    # Validate and format
     terraform validate
     terraform fmt -recursive
 
-    # Step 4: Plan destroy
+    # Plan destroy
     terraform plan -destroy -var-file="$VAR_FILE"
 
-    # Step 5: Confirm destroy
-    read -p "Type 'destroy' to actually destroy $env: " confirm
+    echo "🛑 WARNING: This will permanently destroy all DynamoDB tables for '$env'!"
+    read -p "Type 'destroy' to continue: " confirm
+
     if [ "$confirm" == "destroy" ]; then
         terraform destroy -var-file="$VAR_FILE" -auto-approve
-        echo "✅ Destroyed $env successfully!"
+        echo "✅ Destroy completed for $env"
     else
-        echo "❌ Destroy aborted for $env."
+        echo "❌ Destroy aborted for $env"
     fi
-
-    # Step 6: Re-enable backend.tf if disabled
-    if [ -f backend.tf.disabled ]; then
-        mv backend.tf.disabled backend.tf
-    fi
-
 done
