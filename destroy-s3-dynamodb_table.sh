@@ -69,7 +69,7 @@ fi
 # ---------- Terraform destroy safely ----------
 echo "🔹 Step 4: Destroy Terraform resources (state cleanup)..."
 if aws s3api head-bucket --bucket "$bucket" 2>/dev/null; then
-    terraform destroy -auto-approve || true
+    terraform destroy  || true
 else
     echo "⚠️ S3 backend bucket does not exist. Skipping Terraform destroy."
 fi
