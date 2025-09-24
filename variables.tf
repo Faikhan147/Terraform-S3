@@ -1,5 +1,6 @@
 variable "region" {
-  default = "ap-south-1"
+  description = "AWS region name"
+  type        = string
 }
 
 variable "s3_bucket_name" {
