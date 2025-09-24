@@ -4,7 +4,7 @@ resource "aws_s3_bucket" "private_bucket" {
 
   tags = {
     Name        = var.s3_bucket_name
-    Environment = "prod"
+    environment = var.env
   }
 }
 
