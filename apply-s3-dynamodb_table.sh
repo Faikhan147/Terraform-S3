@@ -14,7 +14,7 @@ fi
 
 echo "🔹 Step 1: Apply S3 bucket and DynamoDB tables locally first (local backend)..."
 terraform init -backend=false
-terraform apply -auto-approve -var-file="$VAR_FILE"
+terraform apply -var-file="$VAR_FILE"
 
 echo "🔹 Step 2: Restore backend.tf and initialize S3 backend..."
 if [ -f "$TMP_BACKEND_FILE" ]; then
@@ -25,6 +25,6 @@ fi
 terraform init -reconfigure
 
 echo "🔹 Step 3: Migrate state to backend (optional)..."
-terraform apply -auto-approve -var-file="$VAR_FILE"
+terraform apply -var-file="$VAR_FILE"
 
 echo "✅ Deployment completed successfully!"
