@@ -10,5 +10,4 @@ terraform {
       version = "~> 6.14.0"
     }
   }
-  # Backend configured via backend-prod.hcl
 }
