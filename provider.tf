@@ -1,3 +1,7 @@
+provider "aws" {
+  region = var.region
+}
+
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
@@ -7,8 +11,4 @@ terraform {
     }
   }
   # Backend configured via backend-prod.hcl
-}
-
-provider "aws" {
-  region = var.region
 }
