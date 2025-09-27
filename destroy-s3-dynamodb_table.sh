@@ -19,20 +19,24 @@ if [[ "$delete_bucket" == "yes" ]]; then
     echo "🔹 Deleting all objects and versions in S3 bucket $bucket..."
 
     if aws s3api head-bucket --bucket "$bucket" --region "$REGION" 2>/dev/null; then
-        # Delete all object versions
-        versions=$(aws s3api list-object-versions --bucket "$bucket" --region "$REGION" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output text)
-        for v in $versions; do
-            key=$(echo $v | awk '{print $1}')
-            versionId=$(echo $v | awk '{print $2}')
-            aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$versionId" --region "$REGION"
+        # Delete all object versions safely
+        versions=$(aws s3api list-object-versions --bucket "$bucket" --region "$REGION" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json)
+        for row in $(echo "$versions" | jq -c '.[]'); do
+            key=$(echo $row | jq -r '.Key')
+            versionId=$(echo $row | jq -r '.VersionId')
+            if [[ -n "$key" && -n "$versionId" ]]; then
+                aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$versionId" --region "$REGION"
+            fi
         done
 
-        # Delete all delete markers
-        markers=$(aws s3api list-object-versions --bucket "$bucket" --region "$REGION" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output text)
-        for m in $markers; do
-            key=$(echo $m | awk '{print $1}')
-            versionId=$(echo $m | awk '{print $2}')
-            aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$versionId" --region "$REGION"
+        # Delete all delete markers safely
+        markers=$(aws s3api list-object-versions --bucket "$bucket" --region "$REGION" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json)
+        for row in $(echo "$markers" | jq -c '.[]'); do
+            key=$(echo $row | jq -r '.Key')
+            versionId=$(echo $row | jq -r '.VersionId')
+            if [[ -n "$key" && -n "$versionId" ]]; then
+                aws s3api delete-object --bucket "$bucket" --key "$key" --version-id "$versionId" --region "$REGION"
+            fi
         done
 
         # Finally delete the bucket
