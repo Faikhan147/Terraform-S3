@@ -26,7 +26,7 @@ else
 fi
 
 # --- manually set bucket name if needed ---
-bucket="${bucket:-terraform-backend-all-env}"
+bucket="${bucket:-terraform-backend-all-envs}"
 
 # ---------- Delete S3 bucket safely ----------
 if [ -n "$bucket" ]; then
