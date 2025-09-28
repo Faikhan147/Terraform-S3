@@ -11,7 +11,7 @@ mv terraform.tfstate.backup terraform.tfstate.backup.old 2>/dev/null || true
 terraform init -backend=false
 
 bucket="terraform-backend-all-envs"   # apna S3 bucket
-tables="terraform-locks-prod terraform-locks-staging terraform-locks-qa terraform-locks-values-prod terraform-locks-values-qa terraform-locks-values-staging"
+tables="terraform-locks-prod terraform-locks-staging terraform-locks-qa terraform-locks-values-prod terraform-locks-values-qa terraform-locks-values-staging terraform-locks-vpc"
 
 # Prompt for S3 bucket deletion
 read -p "Do you want to delete the S3 bucket '$bucket'? (yes/no): " delete_bucket
