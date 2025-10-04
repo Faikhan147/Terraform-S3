@@ -22,8 +22,7 @@ echo "🔢 Listing available workspaces..."
 terraform workspace list
 
 bucket="terraform-backend-all-envs"   # apna S3 bucket
-tables="terraform-locks-prod terraform-locks-staging terraform-locks-qa terraform-locks-values-prod terraform-locks-values-qa terraform-locks-values-staging terraform-locks-vpc" "terraform-locks-jenkins" "terraform-locks-sonarqube" "terraform-locks-jenkins-sonarqube-values" ""
-
+tables="terraform-locks-prod" "terraform-locks-staging" "terraform-locks-qa" "terraform-locks-values-prod" "terraform-locks-values-staging" "terraform-locks-values-qa" "terraform-locks-vpc" "terraform-locks-jenkins-sonarqube-values" "terraform-locks-jenkins" "terraform-locks-sonarqube"
 # Prompt for S3 bucket deletion
 read -p "Do you want to delete the S3 bucket '$bucket'? (yes/no): " delete_bucket
 if [[ "$delete_bucket" == "yes" ]]; then
