@@ -11,9 +11,11 @@ mv terraform.tfstate.backup terraform.tfstate.backup.old 2>/dev/null || true
 echo "🔢initializing..."
 terraform init -backend=false
 
+echo "✅ Validating configuration..."
+terraform validate
+
 echo "📝 Formatting Terraform files..."
 terraform fmt -recursive
-
 
 # Display workspace list
 echo "🔢 Listing available workspaces..."
