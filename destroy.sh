@@ -8,7 +8,16 @@ rm -rf .terraform .terraform.lock.hcl
 mv terraform.tfstate terraform.tfstate.old 2>/dev/null || true
 mv terraform.tfstate.backup terraform.tfstate.backup.old 2>/dev/null || true
 
+echo "🔢initializing..."
 terraform init -backend=false
+
+echo "📝 Formatting Terraform files..."
+terraform fmt -recursive
+
+
+# Display workspace list
+echo "🔢 Listing available workspaces..."
+terraform workspace list
 
 bucket="terraform-backend-all-envs"   # apna S3 bucket
 tables="terraform-locks-prod terraform-locks-staging terraform-locks-qa terraform-locks-values-prod terraform-locks-values-qa terraform-locks-values-staging terraform-locks-vpc"
