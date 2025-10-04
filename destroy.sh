@@ -75,7 +75,7 @@ fi
 read -p "Do you want to delete DynamoDB tables? (yes/no): " delete_tables
 if [[ "$delete_tables" == "yes" ]]; then
     echo "🔹 Deleting DynamoDB tables..."
-    for t in $tables; do
+    for t in "${tables[@]}"; do
         aws dynamodb delete-table --table-name "$t" --region "$REGION" || echo "Table $t not found"
     done
 else
