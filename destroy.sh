@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-REGION="us-east-1"
+REGION="ap-southeast-2"
 
 # Backup and cleanup Terraform state
 mv backend.tf backend.tf.bak 2>/dev/null || true
