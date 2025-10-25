@@ -21,7 +21,7 @@ terraform fmt -recursive
 echo "🔢 Listing available workspaces..."
 terraform workspace list
 
-bucket="terraform-backend-all-envs"   # apna S3 bucket
+bucket="terraform-backend-all-environments"   # apna S3 bucket
 tables=(
     "terraform-locks-prod"
     "terraform-locks-staging"
